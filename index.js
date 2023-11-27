@@ -34,6 +34,7 @@ async function run() {
 
 
     const mealCollection = client.db("hosteldb").collection("meal")
+    const reqMealCollection = client.db("hosteldb").collection("requestedMeals")
 
     app.get('/meal', async (req, res) => {
     const result = await mealCollection.find().toArray();
@@ -47,6 +48,11 @@ async function run() {
       res.send(result)
     })
 
+    app.post('/requestedMeals', async (req, res) => {
+      const reqMeal = req.body;
+      const result = await reqMealCollection.insertOne(reqMeal);
+      res.send(result)
+    })
 
 
 
