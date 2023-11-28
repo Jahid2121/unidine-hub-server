@@ -35,6 +35,7 @@ async function run() {
 
     const mealCollection = client.db("hosteldb").collection("meal")
     const reqMealCollection = client.db("hosteldb").collection("requestedMeals")
+    const reviewCollection = client.db("hosteldb").collection("reviews")
 
     app.get('/meal', async (req, res) => {
     const result = await mealCollection.find().toArray();
@@ -48,9 +49,29 @@ async function run() {
       res.send(result)
     })
 
+
+    // request meals
+
+    app.get('/requestedMeals', async (req, res) => {
+      const adminEmail = req.query.email;
+      console.log(adminEmail);
+      const query = {adminEmail: adminEmail}
+      const result = await reqMealCollection.find(query).toArray();
+      res.send(result)
+    })
+
+
     app.post('/requestedMeals', async (req, res) => {
       const reqMeal = req.body;
       const result = await reqMealCollection.insertOne(reqMeal);
+      res.send(result)
+    })
+
+    // reviews 
+
+    app.post('/reviews', async (req, res) => {
+      const review = req.body;
+      const result = await reviewCollection.insertOne(review)
       res.send(result)
     })
 
