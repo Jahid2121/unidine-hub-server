@@ -38,15 +38,22 @@ async function run() {
     const reviewCollection = client.db("hosteldb").collection("reviews")
 
     app.get('/meal', async (req, res) => {
-    const result = await mealCollection.find().toArray();
-    res.send(result)
+      const result = await mealCollection.find().toArray();
+      res.send(result)
     })
 
     app.get('/meal/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) }
       const result = await mealCollection.findOne(query)
       res.send(result)
+    })
+
+    app.patch('/meal/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updatedResult = await mealCollection.updateOne(query, { $inc: { likes: 1, "metrics.orders": 1} })
+      res.send(updatedResult)
     })
 
 
@@ -55,7 +62,7 @@ async function run() {
     app.get('/requestedMeals', async (req, res) => {
       const adminEmail = req.query.email;
       console.log(adminEmail);
-      const query = {adminEmail: adminEmail}
+      const query = { adminEmail: adminEmail }
       const result = await reqMealCollection.find(query).toArray();
       res.send(result)
     })
@@ -76,6 +83,14 @@ async function run() {
     })
 
 
+    app.get('/reviews', async (req, res) => {
+      const adminEmail = req.query.email;
+      console.log(adminEmail);
+      const query = { adminEmail: adminEmail }
+      const result = await reviewCollection.find(query).toArray();
+      res.send(result)
+    })
+
 
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -92,9 +107,9 @@ run().catch(console.dir);
 
 
 app.get('/', async (req, res) => {
-    res.send('UniDine Hub server is running')
+  res.send('UniDine Hub server is running')
 })
 
 app.listen(port, () => {
-    console.log(`UniDine Hub server listening on ${port}`);
+  console.log(`UniDine Hub server listening on ${port}`);
 })
