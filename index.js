@@ -12,9 +12,7 @@ app.use(cors())
 app.use(express.json())
 
 
-// const verifyAdmin = async( req, res, next) => {
 
-// }
 
 
 
@@ -43,6 +41,34 @@ async function run() {
     const reviewCollection = client.db("hosteldb").collection("reviews")
     const userCollection = client.db("hosteldb").collection("users")
 
+
+    // verify middlewares
+const verifyToken = (req, res, next) => {
+  // console.log('inside verify', req.headers.authorization);
+  if(!req.headers.authorization){
+    return res.status(401).send({message: 'unauthorized access'})
+  }
+  const token = req.headers.authorization.split(' ')[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+    if(err){
+      return res.status(401).send({message: 'unauthorized access'})
+    }
+    req.decoded = decoded
+    next()
+  })
+}
+
+const verifyAdmin = async(req, res, next) => {
+  const email = req.decoded.email;
+  const query = {email: email};
+  const user = await userCollection.findOne(query)
+  const isAdmin = user?.role === 'admin';
+  if(!isAdmin){
+    return res.status(403).send({message: 'forbidden access'})
+  }
+  next()
+}
+
     app.get('/meal', async (req, res) => {
       const result = await mealCollection.find().toArray();
       res.send(result)
@@ -58,23 +84,23 @@ async function run() {
     app.patch('/meal/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const updatedResult = await mealCollection.updateOne(query, { $inc: { likes: 1, "metrics.orders": 1} })
+      const updatedResult = await mealCollection.updateOne(query, { $inc: { likes: 1, "metrics.orders": 1 } })
       res.send(updatedResult)
     })
 
 
     // request meals
 
-    app.get('/requestedMeals', async (req, res) => {
-      const adminEmail = req.query.email;
-      console.log(adminEmail);
-      const query = { adminEmail: adminEmail }
+    app.get('/requestedMeals', verifyToken, async (req, res) => {
+      const email = req.query.email;
+      console.log(email);
+      const query = { email: email }
       const result = await reqMealCollection.find(query).toArray();
       res.send(result)
     })
 
 
-    app.post('/requestedMeals', async (req, res) => {
+    app.post('/requestedMeals', verifyToken, async (req, res) => {
       const reqMeal = req.body;
       const result = await reqMealCollection.insertOne(reqMeal);
       res.send(result)
@@ -97,9 +123,9 @@ async function run() {
       res.send(result)
     })
 
-    app.delete('/reviews/:id', verifyToken, async ( req, res ) => {
-      const id =req.params.id;
-      const query = {_id: new ObjectId(id)}
+    app.delete('/reviews/:id', verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
       const result = await reviewCollection.deleteOne(query)
       res.send(result)
     })
@@ -110,56 +136,32 @@ async function run() {
       const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
         expiresIn: '1h'
       })
-      res.send({token})
+      res.send({ token })
     })
-    // verify middlewares
-    const verifyToken = (req, res, next) => {
-      console.log('inside verify', req.headers.authorization);
-      if(!req.headers.authorization){
-        return res.status(401).send({message: 'forbidden access'})
-      }
-      const token = req.headers.authorization.split(' ')[1];
-      jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
-        if(err){
-          return res.status(401).send({message: 'forbidden access'})
-        }
-        req.decoded = decoded
-        next()
-      })
-    }
 
-    const verifyAdmin = async(req, res, next) => {
-      const email = req.decoded.email;
-      const query = {email: email};
-      const user = await userCollection.findOne(query)
-      const isAdmin = user?.role === 'admin';
-      if(!isAdmin){
-        return res.status(403).send({message: 'unAuthorized access'})
-      }
-    }
 
 
 
     // users
-    app.post('/users', async ( req, res ) => {
+    app.post('/users', async (req, res) => {
       const userData = req.body;
-      const query = { email: userData.email}
+      const query = { email: userData.email }
       const userExist = await userCollection.findOne(query)
-      if(userExist){
-        return res.send({ message: 'user already exist', insertedId: null})
+      if (userExist) {
+        return res.send({ message: 'user already exist', insertedId: null })
       }
       const result = await userCollection.insertOne(userData)
       res.send(result)
     })
 
-    app.get('/users', verifyToken, verifyAdmin,   async ( req, res ) => {
-      
+    app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+
       const result = await userCollection.find().toArray()
       res.send(result)
     })
     app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
-      const filter = {_id: new ObjectId(id)}
+      const filter = { _id: new ObjectId(id) }
       const updatedUser = {
         $set: {
           role: 'admin'
@@ -171,16 +173,16 @@ async function run() {
 
     app.get('/users/admin/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
-      if(email !== req.decoded.email){
-        return res.status(403).send({message: 'unAuthorized access'})
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: 'unAuthorized access' })
       }
-      const query = {email: email};
+      const query = { email: email };
       const user = await userCollection.findOne(query)
       let admin = false;
-      if(user){
+      if (user) {
         admin = user?.role === 'admin'
       }
-      res.send({admin})
+      res.send({ admin })
     })
 
 
