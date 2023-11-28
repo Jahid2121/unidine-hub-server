@@ -98,13 +98,24 @@ const verifyAdmin = async(req, res, next) => {
 
     // request meals
 
-    app.get('/requestedMeals', async (req, res) => {
-      const email = req.query.email;
-      console.log(email);
-      const query = { email: email }
-      const result = await reqMealCollection.find(query).toArray();
+    // app.get('/requestedMeals', async (req, res) => {
+    //   const email = req.query.email;
+    //   console.log(email);
+    //   const query = { email: email }
+    //   const result = await reqMealCollection.find(query).toArray();
+    //   res.send(result)
+    // })
+
+    app.get("/requestedMeals", async (req, res) => {
+      let query = {};
+      if(req.query?.email) {
+          query = {email: req.query.email}
+      }
+      const cursor = reqMealCollection.find(query)
+      const result = await cursor.toArray()
       res.send(result)
-    })
+  })
+
 
 
     app.post('/requestedMeals', verifyToken, async (req, res) => {
