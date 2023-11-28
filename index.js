@@ -36,6 +36,7 @@ async function run() {
     const mealCollection = client.db("hosteldb").collection("meal")
     const reqMealCollection = client.db("hosteldb").collection("requestedMeals")
     const reviewCollection = client.db("hosteldb").collection("reviews")
+    const userCollection = client.db("hosteldb").collection("users")
 
     app.get('/meal', async (req, res) => {
       const result = await mealCollection.find().toArray();
@@ -96,6 +97,13 @@ async function run() {
       const query = {_id: new ObjectId(id)}
       const result = await reviewCollection.deleteOne(query)
       res.send(result)
+    })
+
+    // users
+    app.post('/users', async ( req, res ) => {
+      const userData = req.body;
+      const result = await userCollection.insertOne(userData)
+      res.send(userData)
     })
 
 
