@@ -44,11 +44,12 @@ async function run() {
 
     // verify middlewares
 const verifyToken = (req, res, next) => {
-  // console.log('inside verify', req.headers.authorization);
+  console.log('inside verify', req.headers.authorization);
   if(!req.headers.authorization){
     return res.status(401).send({message: 'unauthorized access'})
   }
   const token = req.headers.authorization.split(' ')[1];
+  console.log(token);
   jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
     if(err){
       return res.status(401).send({message: 'unauthorized access'})
@@ -67,7 +68,13 @@ const verifyAdmin = async(req, res, next) => {
     return res.status(403).send({message: 'forbidden access'})
   }
   next()
-}
+}   
+
+  app.post('/meal', async (req, res ) => {
+    const mealData = req.body;
+      const result = await mealCollection.insertOne(mealData);
+      res.send(result)
+  })
 
     app.get('/meal', async (req, res) => {
       const result = await mealCollection.find().toArray();
@@ -91,7 +98,7 @@ const verifyAdmin = async(req, res, next) => {
 
     // request meals
 
-    app.get('/requestedMeals', verifyToken, async (req, res) => {
+    app.get('/requestedMeals', async (req, res) => {
       const email = req.query.email;
       console.log(email);
       const query = { email: email }
@@ -117,7 +124,7 @@ const verifyAdmin = async(req, res, next) => {
 
     app.get('/reviews', async (req, res) => {
       const email = req.query.email;
-      console.log(email);
+      // console.log(email);
       const query = { email: email }
       const result = await reviewCollection.find(query).toArray();
       res.send(result)
