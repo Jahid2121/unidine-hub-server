@@ -115,10 +115,10 @@ const verifyAdmin = async(req, res, next) => {
     })
 
 
-    app.get('/reviews', verifyToken, verifyAdmin, async (req, res) => {
-      const adminEmail = req.query.email;
-      console.log(adminEmail);
-      const query = { adminEmail: adminEmail }
+    app.get('/reviews', async (req, res) => {
+      const email = req.query.email;
+      console.log(email);
+      const query = { email: email }
       const result = await reviewCollection.find(query).toArray();
       res.send(result)
     })
