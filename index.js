@@ -112,9 +112,21 @@ async function run() {
       })
       res.send({token})
     })
-
-
-
+    // verify middlewares
+    const verifyToken = (req, res, next) => {
+      console.log('inside verify', req.headers.authorization);
+      if(!req.headers.authorization){
+        return res.status(401).send({message: 'forbidden access'})
+      }
+      const token = req.headers.authorization.split(' ')[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+        if(err){
+          return res.status(401).send({message: 'forbidden access'})
+        }
+        req.decoded = decoded
+        next()
+      })
+    }
     // users
     app.post('/users', async ( req, res ) => {
       const userData = req.body;
@@ -127,7 +139,8 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/users', async ( req, res ) => {
+    app.get('/users', verifyToken,  async ( req, res ) => {
+      
       const result = await userCollection.find().toArray()
       res.send(result)
     })
@@ -143,7 +156,17 @@ async function run() {
       res.send(result)
     })
 
-  
+    app.get('/users/admin/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {email: email};
+      const result = await userCollection.findOne(query)
+      let admin = false;
+      if(user){
+        admin = user?.role === 'admin'
+      }
+      res.send({admin})
+    })
+
 
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
