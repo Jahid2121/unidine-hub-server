@@ -199,9 +199,25 @@ const verifyAdmin = async(req, res, next) => {
 
     // membership 
     app.get('/memberships', async (req, res) => {
-      const result = await membershipCollection.find().toArray()
+      let query = {};
+      if(req.query?.name){
+        query = {name: req.query?.name}
+      }
+      const result = await membershipCollection.find(query).toArray()
       res.send(result)
     })
+
+    app.get("/requestedMeals", async (req, res) => {
+      let query = {};
+      if(req.query?.email) {
+          query = {email: req.query.email}
+      }
+      const cursor = reqMealCollection.find(query)
+      const result = await cursor.toArray()
+      res.send(result)
+  })
+
+
 
 
 
