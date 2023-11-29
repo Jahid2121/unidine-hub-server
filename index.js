@@ -32,7 +32,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    await client.connect();
 
 
 
@@ -41,6 +41,7 @@ async function run() {
     const reviewCollection = client.db("hosteldb").collection("reviews")
     const userCollection = client.db("hosteldb").collection("users")
     const membershipCollection = client.db("hosteldb").collection("membership")
+    const paymentCollection = client.db("hosteldb").collection("payment")
 
 
     // verify middlewares
@@ -218,9 +219,10 @@ const verifyAdmin = async(req, res, next) => {
   })
 
   // payment 
-  app.post('//create-payment-intent', async (req, res) => {
+  app.post('/create-payment-intent', async (req, res) => {
     const {price} = req.body;
     const amount = parseInt(price * 100)
+    console.log('amout in the intent', amount);
     const paymentIntent =   await stripe.paymentIntents.create({
       amount: amount,
       currency: 'usd',
@@ -233,11 +235,27 @@ const verifyAdmin = async(req, res, next) => {
   })
 
 
+  app.post('/payments', async (req, res) => {
+    const payment = req.body;
+    const result = await paymentCollection.insertOne(payment)
+    res.send(result)
+  })
+
+  app.get('/payments', async (req, res) => {
+    let query = {}
+    if(req.query?.email){
+      query = {email: req.query.email}
+    }
+
+    const result = await paymentCollection.find(query).toArray()
+    res.send(result)
+  } )
+
 
 
     // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
-    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    await client.db("admin").command({ ping: 1 });
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
