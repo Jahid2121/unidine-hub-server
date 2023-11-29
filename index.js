@@ -40,6 +40,7 @@ async function run() {
     const reqMealCollection = client.db("hosteldb").collection("requestedMeals")
     const reviewCollection = client.db("hosteldb").collection("reviews")
     const userCollection = client.db("hosteldb").collection("users")
+    const membershipCollection = client.db("hosteldb").collection("membership")
 
 
     // verify middlewares
@@ -98,13 +99,6 @@ const verifyAdmin = async(req, res, next) => {
 
     // request meals
 
-    // app.get('/requestedMeals', async (req, res) => {
-    //   const email = req.query.email;
-    //   console.log(email);
-    //   const query = { email: email }
-    //   const result = await reqMealCollection.find(query).toArray();
-    //   res.send(result)
-    // })
 
     app.get("/requestedMeals", async (req, res) => {
       let query = {};
@@ -201,6 +195,12 @@ const verifyAdmin = async(req, res, next) => {
         admin = user?.role === 'admin'
       }
       res.send({ admin })
+    })
+
+    // membership 
+    app.get('/memberships', async (req, res) => {
+      const result = await membershipCollection.find().toArray()
+      res.send(result)
     })
 
 
