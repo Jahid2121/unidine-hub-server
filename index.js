@@ -119,11 +119,28 @@ async function run() {
     app.patch('/meal/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const updatedResult = await mealCollection.updateOne(query, { $inc: { likes: 1, "metrics.orders": 1 } })
+      // console.log(req.body.action);
+      if (req.body.action === 'like') {
+        updateFields = { $inc: { likes: 1, 'metrics.orders': 1 } };
+
+      } else if (req.body.action === 'review') {
+        updateFields = { $inc: { reviews: 1, 'metrics.orders': 1 } };
+      }
+    
+      const updatedResult = await mealCollection.updateOne(query, updateFields);
       res.send(updatedResult)
     })
 
 
+    //     app.patch('/meal/:id', async (req, res) => {
+    //   let 
+    //   const id = req.params.id;
+    //   const query = { _id: new ObjectId(id) };
+    //   const updatedResult = await mealCollection.updateOne(query, { $inc: { likes: 1, "metrics.orders": 1 } })
+    //   res.send(updatedResult)
+    // })
+
+    
     // request meals
 
 
