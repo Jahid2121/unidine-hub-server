@@ -45,43 +45,45 @@ async function run() {
 
 
     // verify middlewares
-const verifyToken = (req, res, next) => {
-  console.log('inside verify', req.headers.authorization);
-  if(!req.headers.authorization){
-    return res.status(401).send({message: 'unauthorized access'})
-  }
-  const token = req.headers.authorization.split(' ')[1];
-  console.log(token);
-  jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
-    if(err){
-      return res.status(401).send({message: 'unauthorized access'})
+    const verifyToken = (req, res, next) => {
+      console.log('inside verify', req.headers.authorization);
+      if (!req.headers.authorization) {
+        return res.status(401).send({ message: 'unauthorized access' })
+      }
+      const token = req.headers.authorization.split(' ')[1];
+      // console.log(token);
+      jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: 'unauthorized access' })
+        }
+        req.decoded = decoded
+        next()
+      })
     }
-    req.decoded = decoded
-    next()
-  })
-}
 
-const verifyAdmin = async(req, res, next) => {
-  const email = req.decoded.email;
-  const query = {email: email};
-  const user = await userCollection.findOne(query)
-  const isAdmin = user?.role === 'admin';
-  if(!isAdmin){
-    return res.status(403).send({message: 'forbidden access'})
-  }
-  next()
-}   
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query)
+      const isAdmin = user?.role === 'admin';
+      if (!isAdmin) {
+        return res.status(403).send({ message: 'forbidden access' })
+      }
+      next()
+    }
 
-  app.post('/meal', async (req, res ) => {
-    const mealData = req.body;
+    app.post('/meal', async (req, res) => {
+      const mealData = req.body;
       const result = await mealCollection.insertOne(mealData);
       res.send(result)
-  })
+    })
 
     app.get('/meal', async (req, res) => {
       const result = await mealCollection.find().toArray();
       res.send(result)
     })
+
+ 
 
     app.get('/meal/:id', async (req, res) => {
       const id = req.params.id;
@@ -103,13 +105,13 @@ const verifyAdmin = async(req, res, next) => {
 
     app.get("/requestedMeals", async (req, res) => {
       let query = {};
-      if(req.query?.email) {
-          query = {email: req.query.email}
+      if (req.query?.email) {
+        query = { email: req.query.email }
       }
       const cursor = reqMealCollection.find(query)
       const result = await cursor.toArray()
       res.send(result)
-  })
+    })
 
 
 
@@ -172,6 +174,25 @@ const verifyAdmin = async(req, res, next) => {
       const result = await userCollection.find().toArray()
       res.send(result)
     })
+
+    app.put('/users', async (req, res) => {
+      let query = {}
+      if (req.query?.email) {
+        query = { email: req.query.email }
+      }
+      const options = {upsert: true}
+      const updatedUser = req.body
+      const user = {
+        $set: {
+          name: updatedUser.name,
+          email:updatedUser.email
+        }
+      }
+      const result = await userCollection.updateOne(query, user, options )
+      res.send(result)
+
+    })
+
     app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) }
@@ -201,8 +222,8 @@ const verifyAdmin = async(req, res, next) => {
     // membership 
     app.get('/memberships', async (req, res) => {
       let query = {};
-      if(req.query?.name){
-        query = {name: req.query?.name}
+      if (req.query?.name) {
+        query = { name: req.query?.name }
       }
       const result = await membershipCollection.find(query).toArray()
       res.send(result)
@@ -210,46 +231,46 @@ const verifyAdmin = async(req, res, next) => {
 
     app.get("/requestedMeals", async (req, res) => {
       let query = {};
-      if(req.query?.email) {
-          query = {email: req.query.email}
+      if (req.query?.email) {
+        query = { email: req.query.email }
       }
       const cursor = reqMealCollection.find(query)
       const result = await cursor.toArray()
       res.send(result)
-  })
-
-  // payment 
-  app.post('/create-payment-intent', async (req, res) => {
-    const {price} = req.body;
-    const amount = parseInt(price * 100)
-    console.log('amout in the intent', amount);
-    const paymentIntent =   await stripe.paymentIntents.create({
-      amount: amount,
-      currency: 'usd',
-      payment_method_types: ['card']
     })
 
-    res.send({
-      clientSecret: paymentIntent.client_secret
+    // payment 
+    app.post('/create-payment-intent', async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100)
+      // console.log('amout in the intent', amount);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      })
+
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
     })
-  })
 
 
-  app.post('/payments', async (req, res) => {
-    const payment = req.body;
-    const result = await paymentCollection.insertOne(payment)
-    res.send(result)
-  })
+    app.post('/payments', async (req, res) => {
+      const payment = req.body;
+      const result = await paymentCollection.insertOne(payment)
+      res.send(result)
+    })
 
-  app.get('/payments', async (req, res) => {
-    let query = {}
-    if(req.query?.email){
-      query = {email: req.query.email}
-    }
+    app.get('/payments', async (req, res) => {
+      let query = {}
+      if (req.query?.email) {
+        query = { email: req.query.email }
+      }
 
-    const result = await paymentCollection.find(query).toArray()
-    res.send(result)
-  } )
+      const result = await paymentCollection.find(query).toArray()
+      res.send(result)
+    })
 
 
 
