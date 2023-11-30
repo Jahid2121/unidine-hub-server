@@ -32,7 +32,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    await client.connect();
 
 
 
@@ -43,6 +43,15 @@ async function run() {
     const membershipCollection = client.db("hosteldb").collection("membership")
     const paymentCollection = client.db("hosteldb").collection("payment")
 
+    // jwt
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
+        expiresIn: '1h'
+      })
+      res.send({ token })
+    })
 
     // verify middlewares
     const verifyToken = (req, res, next) => {
@@ -72,6 +81,7 @@ async function run() {
       next()
     }
 
+
     app.post('/meal', async (req, res) => {
       const mealData = req.body;
       const result = await mealCollection.insertOne(mealData);
@@ -85,9 +95,10 @@ async function run() {
 
     app.put('/meal/:id', async (req, res) => {
       const id = req.params.id;
+      console.log(id);
       const filter = {_id: new ObjectId(id)}
       const updatedMeal = req.body;
-      // console.log(updatedMeal);
+      console.log(updatedMeal);
       const meal = {
         $set: {
           title: updatedMeal.title,
@@ -181,14 +192,7 @@ async function run() {
       res.send(result)
     })
 
-    // jwt
-    app.post('/jwt', async (req, res) => {
-      const user = req.body;
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
-        expiresIn: '1h'
-      })
-      res.send({ token })
-    })
+    
 
 
 
@@ -241,19 +245,19 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/users/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
-      const email = req.params.email;
-      if (email !== req.decoded.email) {
-        return res.status(403).send({ message: 'unAuthorized access' })
-      }
-      const query = { email: email };
-      const user = await userCollection.findOne(query)
-      let admin = false;
-      if (user) {
-        admin = user?.role === 'admin'
-      }
-      res.send({ admin })
-    })
+    // app.get('/users/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
+    //   const email = req.params.email;
+    //   if (email !== req.decoded.email) {
+    //     return res.status(403).send({ message: 'unAuthorized access' })
+    //   }
+    //   const query = { email: email };
+    //   const user = await userCollection.findOne(query)
+    //   let admin = false;
+    //   if (user) {
+    //     admin = user?.role === 'admin'
+    //   }
+    //   res.send({ admin })
+    // })
 
     // membership 
     app.get('/memberships', verifyToken, verifyAdmin, async (req, res) => {
@@ -311,8 +315,8 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
-    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    await client.db("admin").command({ ping: 1 });
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
