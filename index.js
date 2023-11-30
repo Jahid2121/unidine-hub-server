@@ -32,7 +32,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
 
 
@@ -109,14 +109,14 @@ async function run() {
       res.send(result)
     })
 
-    app.delete('/meal/:id', async (req, res) => {
+    app.delete('/meal/:id', verifyToken, verifyAdmin, async (req, res) => {
       const id =req.params.id;
       const query = {_id : new ObjectId(id)}
       const result = await mealCollection.deleteOne(query)
       res.send(result)
     })
 
-    app.patch('/meal/:id', async (req, res) => {
+    app.patch('/meal/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       // console.log(req.body.action);
@@ -132,19 +132,12 @@ async function run() {
     })
 
 
-    //     app.patch('/meal/:id', async (req, res) => {
-    //   let 
-    //   const id = req.params.id;
-    //   const query = { _id: new ObjectId(id) };
-    //   const updatedResult = await mealCollection.updateOne(query, { $inc: { likes: 1, "metrics.orders": 1 } })
-    //   res.send(updatedResult)
-    // })
 
     
     // request meals
 
 
-    app.get("/requestedMeals", async (req, res) => {
+    app.get("/requestedMeals", verifyToken, async (req, res) => {
       let query = {};
       if (req.query?.email) {
         query = { email: req.query.email }
@@ -164,14 +157,14 @@ async function run() {
 
     // reviews 
 
-    app.post('/reviews', async (req, res) => {
+    app.post('/reviews', verifyToken, async (req, res) => {
       const review = req.body;
       const result = await reviewCollection.insertOne(review)
       res.send(result)
     })
 
 
-    app.get('/reviews', async (req, res) => {
+    app.get('/reviews', verifyToken, async (req, res) => {
       // const email = req.query.email;
       let query = {};
       if (req.query?.email) {
@@ -181,7 +174,7 @@ async function run() {
       res.send(result)
     })
 
-    app.delete('/reviews/:id', verifyToken, async (req, res) => {
+    app.delete('/reviews/:id', verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await reviewCollection.deleteOne(query)
@@ -201,7 +194,7 @@ async function run() {
 
 
     // users
-    app.post('/users', async (req, res) => {
+    app.post('/users',  async (req, res) => {
       const userData = req.body;
       const query = { email: userData.email }
       const userExist = await userCollection.findOne(query)
@@ -218,7 +211,7 @@ async function run() {
       res.send(result)
     })
 
-    app.put('/users', async (req, res) => {
+    app.put('/users', verifyToken, async (req, res) => {
       let query = {}
       if (req.query?.email) {
         query = { email: req.query.email }
@@ -248,7 +241,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/users/admin/:email', verifyToken, async (req, res) => {
+    app.get('/users/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
       const email = req.params.email;
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: 'unAuthorized access' })
@@ -263,7 +256,7 @@ async function run() {
     })
 
     // membership 
-    app.get('/memberships', async (req, res) => {
+    app.get('/memberships', verifyToken, verifyAdmin, async (req, res) => {
       let query = {};
       if (req.query?.name) {
         query = { name: req.query?.name }
@@ -272,7 +265,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get("/requestedMeals", async (req, res) => {
+    app.get("/requestedMeals",verifyToken, async (req, res) => {
       let query = {};
       if (req.query?.email) {
         query = { email: req.query.email }
@@ -283,7 +276,7 @@ async function run() {
     })
 
     // payment 
-    app.post('/create-payment-intent', async (req, res) => {
+    app.post('/create-payment-intent', verifyToken, async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100)
       // console.log('amout in the intent', amount);
@@ -299,13 +292,13 @@ async function run() {
     })
 
 
-    app.post('/payments', async (req, res) => {
+    app.post('/payments',verifyToken, async (req, res) => {
       const payment = req.body;
       const result = await paymentCollection.insertOne(payment)
       res.send(result)
     })
 
-    app.get('/payments', async (req, res) => {
+    app.get('/payments',verifyToken, async (req, res) => {
       let query = {}
       if (req.query?.email) {
         query = { email: req.query.email }
@@ -318,8 +311,8 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
