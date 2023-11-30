@@ -86,8 +86,8 @@ async function run() {
     app.put('/meal/:id', async (req, res) => {
       const id = req.params.id;
       const filter = {_id: new ObjectId(id)}
-      const options = {upsert: true}
       const updatedMeal = req.body;
+      // console.log(updatedMeal);
       const meal = {
         $set: {
           title: updatedMeal.title,
@@ -98,7 +98,7 @@ async function run() {
           price: updatedMeal.price
         }
       }
-      const result = await userCollection.updateOne(filter, meal, options )
+      const result = await userCollection.updateOne(filter, meal )
       res.send(result)
     })
 
@@ -155,9 +155,11 @@ async function run() {
 
 
     app.get('/reviews', async (req, res) => {
-      const email = req.query.email;
-      // console.log(email);
-      const query = { email: email }
+      // const email = req.query.email;
+      let query = {};
+      if (req.query?.email) {
+        query = { email: req.query.email }
+      }
       const result = await reviewCollection.find(query).toArray();
       res.send(result)
     })
