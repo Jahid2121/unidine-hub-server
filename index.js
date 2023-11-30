@@ -32,7 +32,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
 
 
@@ -70,17 +70,26 @@ async function run() {
       })
     }
 
+    // const verifyAdmin = async (req, res, next) => {
+    //   const email = req.decoded.email;
+    //   const query = { email: email };
+    //   const user = await userCollection.findOne(query)
+    //   const isAdmin = user?.role === 'admin';
+    //   if (!isAdmin) {
+    //     return res.status(403).send({ message: 'forbidden access' })
+    //   }
+    //   next()
+    // }
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email };
-      const user = await userCollection.findOne(query)
+      const user = await userCollection.findOne(query);
       const isAdmin = user?.role === 'admin';
       if (!isAdmin) {
-        return res.status(403).send({ message: 'forbidden access' })
+        return res.status(403).send({ message: 'forbidden access' });
       }
-      next()
+      next();
     }
-
 
     app.post('/meal', async (req, res) => {
       const mealData = req.body;
@@ -245,19 +254,16 @@ async function run() {
       res.send(result)
     })
 
-    // app.get('/users/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
-    //   const email = req.params.email;
-    //   if (email !== req.decoded.email) {
-    //     return res.status(403).send({ message: 'unAuthorized access' })
-    //   }
-    //   const query = { email: email };
-    //   const user = await userCollection.findOne(query)
-    //   let admin = false;
-    //   if (user) {
-    //     admin = user?.role === 'admin'
-    //   }
-    //   res.send({ admin })
-    // })
+     app.get('/users/admin/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      
+      const admin = user?.role === 'admin';
+      
+      res.send({ admin });
+    })
 
     // membership 
     app.get('/memberships', verifyToken, verifyAdmin, async (req, res) => {
@@ -315,8 +321,8 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
