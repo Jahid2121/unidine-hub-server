@@ -83,12 +83,36 @@ async function run() {
       res.send(result)
     })
 
- 
+    app.put('/meal/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)}
+      const options = {upsert: true}
+      const updatedMeal = req.body;
+      const meal = {
+        $set: {
+          title: updatedMeal.title,
+          category: updatedMeal.category,
+          image: updatedMeal.image,
+          ingredients: updatedMeal.ingredients,
+          description: updatedMeal.description,
+          price: updatedMeal.price
+        }
+      }
+      const result = await userCollection.updateOne(filter, meal, options )
+      res.send(result)
+    })
 
     app.get('/meal/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await mealCollection.findOne(query)
+      res.send(result)
+    })
+
+    app.delete('/meal/:id', async (req, res) => {
+      const id =req.params.id;
+      const query = {_id : new ObjectId(id)}
+      const result = await mealCollection.deleteOne(query)
       res.send(result)
     })
 
