@@ -42,11 +42,12 @@ async function run() {
     const userCollection = client.db("hosteldb").collection("users")
     const membershipCollection = client.db("hosteldb").collection("membership")
     const paymentCollection = client.db("hosteldb").collection("payment")
+    const customerReviewCollection = client.db("hosteldb").collection("customerReview")
 
     // jwt
     app.post('/jwt', async (req, res) => {
       const user = req.body;
-      console.log(user);
+      // console.log(user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
         expiresIn: '1h'
       })
@@ -60,7 +61,7 @@ async function run() {
         return res.status(401).send({ message: 'unauthorized access' })
       }
       const token = req.headers.authorization.split(' ')[1];
-      // console.log(token);
+      console.log(token);
       jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
         if (err) {
           return res.status(401).send({ message: 'unauthorized access' })
@@ -70,16 +71,7 @@ async function run() {
       })
     }
 
-    // const verifyAdmin = async (req, res, next) => {
-    //   const email = req.decoded.email;
-    //   const query = { email: email };
-    //   const user = await userCollection.findOne(query)
-    //   const isAdmin = user?.role === 'admin';
-    //   if (!isAdmin) {
-    //     return res.status(403).send({ message: 'forbidden access' })
-    //   }
-    //   next()
-    // }
+
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email };
@@ -136,28 +128,35 @@ async function run() {
       res.send(result)
     })
 
-    app.patch('/meal/:id', verifyToken, async (req, res) => {
+    app.patch('/meal/:id', async (req, res) => {
       const id = req.params.id;
+      console.log(id);
       const query = { _id: new ObjectId(id) };
-      // console.log(req.body.action);
+      let updateFields;
       if (req.body.action === 'like') {
         updateFields = { $inc: { likes: 1, 'metrics.orders': 1 } };
 
       } else if (req.body.action === 'review') {
         updateFields = { $inc: { reviews: 1, 'metrics.orders': 1 } };
+        console.log("updated reviews: " + updateFields);
       }
     
       const updatedResult = await mealCollection.updateOne(query, updateFields);
       res.send(updatedResult)
     })
 
+    // Customer Reviews 
+    app.get('/CustomerReviews', async (req, res) => {
+      const result = await customerReviewCollection.find().toArray()
+      res.send(result)
+    })
 
 
     
     // request meals
 
 
-    app.get("/requestedMeals", verifyToken, async (req, res) => {
+    app.get("/requestedMeals", async (req, res) => {
       let query = {};
       if (req.query?.email) {
         query = { email: req.query.email }
@@ -177,14 +176,20 @@ async function run() {
 
     // reviews 
 
-    app.post('/reviews', verifyToken, async (req, res) => {
+    app.post('/reviews', async (req, res) => {
       const review = req.body;
       const result = await reviewCollection.insertOne(review)
       res.send(result)
     })
+    /////// ///////
+    app.get("/booksCollection", async (req, res) => {
+      const cursor = bookCollection.find()
+      const result = await cursor.toArray()
+      res.send(result)
+  })
 
 
-    app.get('/reviews', verifyToken, async (req, res) => {
+    app.get('/reviews', async (req, res) => {
       // const email = req.query.email;
       let query = {};
       if (req.query?.email) {
@@ -194,7 +199,7 @@ async function run() {
       res.send(result)
     })
 
-    app.delete('/reviews/:id', verifyToken, verifyAdmin, async (req, res) => {
+    app.delete('/reviews/:id', verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await reviewCollection.deleteOne(query)
@@ -218,8 +223,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
-
+    app.get('/users', async (req, res) => {
       const result = await userCollection.find().toArray()
       res.send(result)
     })
@@ -242,7 +246,7 @@ async function run() {
 
     })
 
-    app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
+    app.patch('/users/admin/:id', async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) }
       const updatedUser = {
@@ -254,19 +258,20 @@ async function run() {
       res.send(result)
     })
 
-     app.get('/users/admin/:email', verifyToken, async (req, res) => {
+     app.get('/users/admin/:email',  async (req, res) => {
       const email = req.params.email;
-
       const query = { email: email };
       const user = await userCollection.findOne(query);
-      
-      const admin = user?.role === 'admin';
+      let admin = false;
+      if(user){
+        admin = user?.role === 'admin';
+      }
       
       res.send({ admin });
     })
 
     // membership 
-    app.get('/memberships', verifyToken, verifyAdmin, async (req, res) => {
+    app.get('/memberships', async (req, res) => {
       let query = {};
       if (req.query?.name) {
         query = { name: req.query?.name }
@@ -308,7 +313,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/payments',verifyToken, async (req, res) => {
+    app.get('/payments', async (req, res) => {
       let query = {}
       if (req.query?.email) {
         query = { email: req.query.email }
@@ -321,8 +326,8 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
-    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    await client.db("admin").command({ ping: 1 });
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
