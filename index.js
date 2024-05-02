@@ -54,6 +54,10 @@ async function run() {
       res.send({ token })
     })
 
+
+
+
+
     // verify middlewares
     const verifyToken = (req, res, next) => {
       console.log('inside verify', req.headers.authorization);
@@ -82,6 +86,8 @@ async function run() {
       }
       next();
     }
+
+
 
     app.post('/meal', async (req, res) => {
       const mealData = req.body;
@@ -145,10 +151,17 @@ async function run() {
       res.send(updatedResult)
     })
 
+    app.patch('/requestedMeals/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id)}
+      const updateOne = await reqMealCollection.updateOne(query, [{ $set: { status : "served"}}])
+      res.send(updateOne)
+    })
+
     // Customer Reviews 
     app.get('/CustomerReviews', async (req, res) => {
       const result = await customerReviewCollection.find().toArray()
-      res.send(result)
+      res.send(result)  
     })
 
 
@@ -181,7 +194,7 @@ async function run() {
       const result = await reviewCollection.insertOne(review)
       res.send(result)
     })
-    /////// ///////
+
     app.get("/booksCollection", async (req, res) => {
       const cursor = bookCollection.find()
       const result = await cursor.toArray()
@@ -289,6 +302,38 @@ async function run() {
       const result = await cursor.toArray()
       res.send(result)
     })
+
+    app.delete("/requestedMeals/:id", verifyToken, async (req, res) => {
+      try {
+        const mealId = req.params.id;
+        const userEmail = req.query.email; // Get user's email from query parameters
+    
+        // Check if meal exists
+        const meal = await reqMealCollection.findOne({ _id: ObjectId(mealId) });
+        if (!meal) {
+          return res.status(404).json({ error: "Meal not found" });
+        }
+    
+        // Check if meal belongs to the user
+        if (meal.email !== userEmail) {
+          return res.status(403).json({ error: "Unauthorized - Meal does not belong to the user" });
+        }
+    
+        // Delete the meal
+        const result = await reqMealCollection.deleteOne({ _id: ObjectId(mealId) });
+    
+        // Check if deletion was successful
+        if (result.deletedCount === 1) {
+          res.json({ message: "Meal deleted successfully" });
+        } else {
+          res.status(500).json({ error: "Failed to delete meal" });
+        }
+      } catch (error) {
+        console.error("Error deleting meal:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    });
+    
 
     // payment 
     app.post('/create-payment-intent', verifyToken, async (req, res) => {
