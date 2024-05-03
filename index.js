@@ -54,6 +54,10 @@ async function run() {
       res.send({ token })
     })
 
+    userCollection.updateMany( 
+      { status: { $exists: false}},
+      { $set: { status: 'Not Subscribed' }}
+    )
 
 
 
@@ -282,6 +286,27 @@ async function run() {
       
       res.send({ admin });
     })
+
+    app.patch('/users/:email', async (req, res) => {
+      try {
+          const email = req.params.email;
+          const query = { email: email };
+          const updateUser = await userCollection.updateOne(query, { $set: { status: "Subscribed" } });
+          
+          // Log the updated user
+          console.log(updateUser);
+  
+          if (updateUser.modifiedCount === 1) {
+              res.status(200).send({ message: "User status updated successfully" });
+          } else {
+              res.status(404).send({ message: "User not found or status not updated" });
+          }
+      } catch (error) {
+          console.error("Error updating user status:", error);
+          res.status(500).send({ message: "Internal server error" });
+      }
+  });
+
 
     // membership 
     app.get('/memberships', async (req, res) => {
