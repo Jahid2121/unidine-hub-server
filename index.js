@@ -7,10 +7,10 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000;
 
 
-
 // middlewares
 app.use(cors())
 app.use(express.json())
+
 
 
 
@@ -32,7 +32,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    await client.connect();
 
 
 
@@ -49,16 +49,13 @@ async function run() {
       const user = req.body;
       // console.log(user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
-        expiresIn: '1h'
+        expiresIn: '365d'
       })
       res.send({ token })
     })
 
-    userCollection.updateMany( 
-      { status: { $exists: false}},
-      { $set: { status: 'Not Subscribed' }}
-    )
 
+   
 
 
 
@@ -287,6 +284,8 @@ async function run() {
       res.send({ admin });
     })
 
+    
+
     app.patch('/users/:email', async (req, res) => {
       try {
           const email = req.params.email;
@@ -391,6 +390,34 @@ async function run() {
 
       const result = await paymentCollection.find(query).toArray()
       res.send(result)
+    })
+
+    //  Admin Analytics 
+    app.get("/admin-analytics", verifyToken, verifyAdmin, async (req, res) => {
+      const meals = await mealCollection.estimatedDocumentCount()
+      const subscribers = await paymentCollection.estimatedDocumentCount()
+      const orders = await reqMealCollection.estimatedDocumentCount()
+
+      const result = await paymentCollection.aggregate([
+        {
+          $group: {
+            _id: null,
+            TotalRevenue:{
+              $sum: '$price'
+            }
+          }
+        }
+      ]).toArray()
+
+      const revenue = result.length > 0 ? result[0].TotalRevenue : 0;
+
+      res.send({
+        meals,
+        subscribers,
+        revenue,
+        orders
+
+      })
     })
 
 
